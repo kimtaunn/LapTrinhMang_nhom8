@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e8">
+  <title>Phòng đấu Caro — Caro Club</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Caro Club - trang chủ">
+      <span class="brand-mark"><span>X</span><span>O</span></span>
+      <span>Caro Club</span>
+    </a>
+    <nav class="main-nav" aria-label="Điều hướng chính">
+      <a class="nav-link active" href="#game">Phòng chơi</a>
+      <button class="nav-link" type="button" disabled title="Lịch sử ván đấu sẽ có trong phiên bản sau">Lịch sử</button>
+    </nav>
+    <div class="account">
+      <span class="account-avatar">B</span>
+      <span class="account-name">Bạn</span>
+      <span class="online-dot" aria-label="Trực tuyến"></span>
+    </div>
+  </header>
+
+  <main class="page-shell" id="game">
+    <section class="game-column">
+      <div class="page-heading">
+        <div>
+          <a class="back-link" href="#game">← <span>Phòng chơi</span></a>
+          <div class="title-row">
+            <h1>Phòng đấu bạn bè</h1>
+            <span class="live-badge"><span></span> ĐANG DIỄN RA</span>
+          </div>
+        </div>
+        <div class="room-code-card">
+          <div>
+            <span class="field-label">MÃ PHÒNG</span>
+            <strong id="room-code-display">CHƯA TẠO</strong>
+          </div>
+          <button id="copy-room" class="copy-button" type="button" disabled aria-label="Sao chép mã phòng">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg>
+            <span id="copy-label">Sao chép</span>
+          </button>
+        </div>
+      </div>
+
+      <section class="room-setup" aria-label="Tạo hoặc tham gia phòng">
+        <button id="create-room" class="primary-button" type="button">Tạo phòng mới</button>
+        <label class="sr-only" for="room-code">Mã phòng</label>
+        <input id="room-code" maxlength="6" placeholder="Nhập mã phòng" autocomplete="off">
+        <button id="join-room" class="secondary-button" type="button">Vào phòng</button>
+        <span id="connection" class="connection">Đang kết nối...</span>
+      </section>
+
+      <section class="player-strip" aria-label="Thông tin ván đấu">
+        <article class="player-card active-turn" id="player-card-x">
+          <span class="avatar avatar-x" id="avatar-x">X</span>
+          <span class="player-identity">
+            <strong id="name-x">Người chơi X</strong>
+            <span>Quân X · <b id="score-x">0</b> điểm</span>
+          </span>
+          <span class="turn-clock">
+            <small id="turn-label-x">LƯỢT CỦA BẠN</small>
+            <strong id="clock-x">00:00</strong>
+          </span>
+        </article>
+        <div class="round-indicator">
+          <span class="round-token">VS</span>
+          <span id="round-label">VÁN 1/3</span>
+        </div>
+        <article class="player-card" id="player-card-o">
+          <span class="player-identity right">
+            <strong id="name-o">Đối thủ</strong>
+            <span>Quân O · <b id="score-o">0</b> điểm</span>
+          </span>
+          <span class="turn-clock">
+            <small id="turn-label-o">ĐANG CHỜ</small>
+            <strong id="clock-o">00:00</strong>
+          </span>
+          <span class="avatar avatar-o" id="avatar-o">O</span>
+        </article>
+      </section>
+
+      <section class="board-card" aria-label="Bàn cờ">
+        <div class="board-heading">
+          <div class="turn-state">
+            <span class="turn-icon" id="turn-icon">X</span>
+            <span><strong id="status">Tạo phòng để bắt đầu</strong><small id="turn-hint">Mời bạn bè bằng mã phòng</small></span>
+          </div>
+          <span class="board-note">15 × 15</span>
+        </div>
+        <div id="board" class="board" aria-label="Bàn cờ Caro"></div>
+        <div class="board-actions">
+          <button id="undo" class="action-button" type="button" disabled title="Chức năng hoàn tác chưa được hỗ trợ">↶ <span>Hoàn tác</span></button>
+          <button id="restart" class="action-button restart-button" type="button" disabled>⟳ <span>Chơi lại</span></button>
+          <button id="forfeit" class="action-button forfeit-button" type="button" disabled>⚑ <span>Xin thua</span></button>
+        </div>
+      </section>
+      <div class="connection-footnote"><span></span><span id="connection-note">Đang kết nối máy chủ trò chơi</span></div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="chat-card">
+        <div class="chat-header">
+          <span class="chat-heading-icon">▢</span>
+          <div><h2>Trò chuyện</h2><p><span class="online-dot"></span> <span id="online-count">0</span> người đang online</p></div>
+          <button class="more-button" type="button" aria-label="Tùy chọn trò chuyện">···</button>
+        </div>
+        <div id="messages" class="messages" aria-live="polite">
+          <p class="chat-day">Hôm nay</p>
+          <p class="empty-chat" id="empty-chat">Tin nhắn với đối thủ sẽ xuất hiện ở đây.</p>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <label class="sr-only" for="chat-input">Tin nhắn</label>
+          <input id="chat-input" maxlength="250" placeholder="Nhắn gì đó..." autocomplete="off" disabled>
+          <button id="send-chat" type="submit" disabled aria-label="Gửi tin nhắn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+          </button>
+        </form>
+        <section class="quick-rules">
+          <h3><span>ⓘ</span> Luật chơi nhanh</h3>
+          <p>Nối đủ 5 quân liên tiếp theo hàng ngang, dọc hoặc chéo để chiến thắng. Năm quân bị chặn cả hai đầu không được tính thắng.</p>
+        </section>
+        <div class="sound-row">
+          <span><span class="sound-icon">◖</span> Âm thanh trong trận</span>
+          <label class="switch" aria-label="Bật hoặc tắt âm thanh">
+            <input id="sound-toggle" type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
