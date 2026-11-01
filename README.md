@@ -23,6 +23,10 @@ Thử trên 1 máy: mở 2 cửa sổ game, một bên Tạo phòng, bên kia gi
 
 Thư mục `CaroWeb` chứa phiên bản web dùng ASP.NET Core SignalR. Người chơi mở cùng một địa chỉ web, một người tạo phòng rồi gửi mã 6 ký tự cho người còn lại. Không cần cài ứng dụng hoặc cấu hình IP/cổng trên máy người chơi. Bản WinForms hiện có vẫn được giữ nguyên.
 
+### Chơi trực tuyến
+
+Mở [Caro Club](https://laptrinhmang-nhom8.onrender.com) để chơi trực tuyến. Một người tạo phòng rồi chia sẻ mã phòng cho người còn lại.
+
 Giao diện web có chat trực tuyến, đồng hồ lượt, điểm số theo loạt tối đa 3 ván, bật/tắt âm thanh và nút xin thua. Nút hoàn tác đang bị khóa vì chưa có hỗ trợ đồng bộ nước đi ngược trên máy chủ. Lịch sử chat/điểm số chưa được lưu sau khi rời phòng hoặc khởi động lại máy chủ.
 
 ### Chạy thử trên máy phát triển
