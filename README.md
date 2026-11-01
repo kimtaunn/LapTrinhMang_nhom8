@@ -29,13 +29,17 @@ Mở [Caro Club](https://laptrinhmang-nhom8.onrender.com) để chơi trực tuy
 
 Giao diện web có chat trực tuyến, đồng hồ lượt, điểm số theo loạt tối đa 3 ván, bật/tắt âm thanh và nút xin thua. Nút hoàn tác đang bị khóa vì chưa có hỗ trợ đồng bộ nước đi ngược trên máy chủ. Lịch sử chat/điểm số chưa được lưu sau khi rời phòng hoặc khởi động lại máy chủ.
 
-### Chạy thử trên máy phát triển
+### Chạy local
+
+Cài .NET 8 SDK, mở terminal tại thư mục gốc repository rồi chạy:
 
 ```powershell
 dotnet run --project .\CaroWeb\CaroWeb.csproj
 ```
 
-Mở URL được in ra bởi `dotnet run`. Để thử trên cùng máy, mở hai cửa sổ trình duyệt. Để người khác truy cập qua Internet, ứng dụng web phải được triển khai lên máy chủ có HTTPS và hỗ trợ WebSocket/SignalR.
+Mở [http://localhost:5000](http://localhost:5000) trong trình duyệt. Để thử hai người trên cùng máy, mở URL trong hai cửa sổ trình duyệt. Nhấn `Ctrl+C` trong terminal để dừng server.
+
+Để người khác truy cập qua Internet, dùng bản đã triển khai: [Caro Club](https://laptrinhmang-nhom8.onrender.com). Ứng dụng web cần được host trên máy chủ có HTTPS và hỗ trợ WebSocket/SignalR.
 
 ### Triển khai máy chủ
 
