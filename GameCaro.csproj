@@ -12,4 +12,8 @@
     <ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="CaroWeb\**\*.cs" />
+  </ItemGroup>
+
 </Project>
