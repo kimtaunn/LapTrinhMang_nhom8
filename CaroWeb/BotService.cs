@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-internal static class BotService
+public static class BotService
 {
     private static readonly (int Row, int Column)[] Directions =
         [(0, 1), (1, 0), (1, 1), (1, -1)];
@@ -10,6 +10,13 @@ internal static class BotService
 
     public static (int Row, int Column) ChooseMove(char[,] board, string difficulty)
     {
+        ArgumentNullException.ThrowIfNull(board);
+        if (board.GetLength(0) != CaroRules.BoardSize ||
+            board.GetLength(1) != CaroRules.BoardSize)
+            throw new ArgumentException($"The board must be {CaroRules.BoardSize}x{CaroRules.BoardSize}.", nameof(board));
+        if (!IsValidDifficulty(difficulty))
+            throw new ArgumentException("Difficulty must be easy, medium, or hard.", nameof(difficulty));
+
         var candidates = GetCandidates(board);
         if (candidates.Count == 0)
             throw new InvalidOperationException("Bot không tìm thấy ô trống hợp lệ.");
@@ -32,11 +39,23 @@ internal static class BotService
         {
             board[move.Row, move.Column] = 'O';
             var attackScore = ScoreAt(board, move.Row, move.Column, 'O');
+            var ownWinningContinuations = difficulty == "hard"
+                ? FindImmediateWins(board, GetCandidates(board), 'O').Count
+                : 0;
+            var opponentWinningContinuations = difficulty == "hard"
+                ? FindImmediateWins(board, GetCandidates(board), 'X').Count
+                : 0;
             board[move.Row, move.Column] = 'X';
             var defenseScore = ScoreAt(board, move.Row, move.Column, 'X');
             board[move.Row, move.Column] = '\0';
 
             var score = attackScore + defenseWeight * defenseScore;
+            if (difficulty == "hard")
+            {
+                if (ownWinningContinuations > 1)
+                    score += 250_000 * (ownWinningContinuations - 1);
+                score -= 500_000 * opponentWinningContinuations;
+            }
             if (score > bestScore)
             {
                 bestScore = score;

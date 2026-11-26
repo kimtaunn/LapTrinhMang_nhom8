@@ -98,10 +98,13 @@
           </div>
           <span class="board-note">15 × 15</span>
         </div>
+        <div id="turn-live-detail" class="turn-live-detail" role="status" aria-live="polite">
+          Tạo phòng hoặc tham gia để xem lượt X/O.
+        </div>
         <div id="board" class="board" aria-label="Bàn cờ Caro"></div>
         <div class="board-actions">
-          <button id="undo" class="action-button" type="button" disabled title="Chức năng hoàn tác chưa được hỗ trợ">↶ <span>Hoàn tác</span></button>
-          <button id="restart" class="action-button restart-button" type="button" disabled>⟳ <span>Chơi lại</span></button>
+          <button id="undo" class="action-button" type="button" disabled>↶ <span>Xin hoàn tác</span></button>
+          <button id="restart" class="action-button restart-button" type="button" disabled>⟳ <span>Xin chơi lại</span></button>
           <button id="leave-room" class="action-button leave-room-button" type="button" disabled>↪ <span>Rời phòng</span></button>
           <button id="forfeit" class="action-button forfeit-button" type="button" disabled>⚑ <span>Xin thua</span></button>
         </div>
@@ -155,6 +158,30 @@
       <div id="history-list" class="history-list" aria-live="polite"></div>
     </section>
   </main>
+
+  <dialog id="request-dialog" class="game-dialog" aria-labelledby="request-dialog-title">
+    <div class="dialog-content">
+      <span class="dialog-kicker">CARO CLUB</span>
+      <h2 id="request-dialog-title">Yêu cầu từ đối thủ</h2>
+      <p id="request-dialog-message"></p>
+      <div class="dialog-actions">
+        <button id="request-decline" class="secondary-button" type="button">Từ chối</button>
+        <button id="request-accept" class="primary-button" type="button">Đồng ý</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="game-over-dialog" class="game-dialog game-over-dialog" aria-labelledby="game-over-title">
+    <div class="dialog-content">
+      <span class="game-over-trophy" aria-hidden="true">🏆</span>
+      <h2 id="game-over-title">Ván đấu kết thúc</h2>
+      <p id="game-over-message"></p>
+      <div class="dialog-actions">
+        <button id="game-over-close" class="secondary-button" type="button">Đóng</button>
+        <button id="game-over-restart" class="primary-button" type="button">Xin chơi ván mới</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/app.js"></script>
