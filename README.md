@@ -1,0 +1,40 @@
+# Game Caro LAN (WinForms, .NET 8)
+
+Game Caro 15x15 cho 2 người chơi trên cùng mạng WiFi/LAN.
+
+## Cách mở và chạy
+- **Visual Studio 2022**: mở `GameCaro.sln`, bấm F5. (Cần workload ".NET desktop development" và .NET 8 SDK.)
+- **Dòng lệnh** (Windows): `dotnet run`
+
+## Cách chơi qua WiFi
+1. Máy A bấm **Tạo phòng** -> khung chat hiện IP của máy A.
+2. Máy B nhập IP đó vào ô IP, bấm **Vào phòng**.
+3. Lần đầu Host chạy, Windows Firewall hỏi -> chọn **Cho phép (Private network)**. Cổng dùng: TCP 9999.
+
+Thử trên 1 máy: mở 2 cửa sổ game, một bên Tạo phòng, bên kia giữ IP 127.0.0.1 rồi Vào phòng.
+
+## Luật
+- 5 quân liên tiếp (ngang/dọc/chéo) là thắng.
+- `LuatChan2Dau = true` (trong Form1.cs): 5 quân bị chặn cả 2 đầu thì không thắng (luật VN). Đặt `false` cho luật tự do.
+- Ván chẵn Host đi trước, ván lẻ Client đi trước.
+- Chơi lại giữa ván cần đối thủ đồng ý.
+
+## Bản web: chơi bằng trình duyệt
+
+Thư mục `CaroWeb` chứa phiên bản web dùng ASP.NET Core SignalR. Người chơi mở cùng một địa chỉ web, một người tạo phòng rồi gửi mã 6 ký tự cho người còn lại. Không cần cài ứng dụng hoặc cấu hình IP/cổng trên máy người chơi. Bản WinForms hiện có vẫn được giữ nguyên.
+
+Giao diện web có chat trực tuyến, đồng hồ lượt, điểm số theo loạt tối đa 3 ván, bật/tắt âm thanh và nút xin thua. Nút hoàn tác đang bị khóa vì chưa có hỗ trợ đồng bộ nước đi ngược trên máy chủ. Tin nhắn chat không được lưu sau khi rời phòng hoặc khởi động lại máy chủ.
+
+Bản web cũng hỗ trợ chơi với bot nội bộ ở ba mức dễ, trung bình và khó; không cần API key hoặc dịch vụ AI bên ngoài. Bot chờ khoảng 1–1,5 giây trước mỗi nước đi, đồng thời ưu tiên nước thắng và chặn nước thắng trực tiếp ở hai mức trung bình/khó. Lịch sử lưu 5 kết quả gần nhất trên localStorage của trình duyệt. Có thể rời phòng để chủ phòng đóng phòng hoặc khách nhường chỗ cho người chơi khác. Có thể đổi độ khó trong ván với máy; lựa chọn mới áp dụng từ nước đi bot tiếp theo và được giữ khi chơi lại, kể cả sau khi người chơi xin thua.
+
+### Chạy thử trên máy phát triển
+
+```powershell
+dotnet run --project .\LapTrinhMang_nhom8-main\CaroWeb\CaroWeb.csproj
+```
+
+Mở URL được in ra bởi `dotnet run`. Để thử trên cùng máy, mở hai cửa sổ trình duyệt. Để người khác truy cập qua Internet, ứng dụng web phải được triển khai lên máy chủ có HTTPS và hỗ trợ WebSocket/SignalR.
+
+### Triển khai máy chủ
+
+Có thể triển khai `CaroWeb` trên dịch vụ hosting hỗ trợ Docker. Chọn thư mục `CaroWeb` làm thư mục build/root; Dockerfile đã có sẵn. Sau khi deploy, chia sẻ URL HTTPS của ứng dụng. Các phòng hiện được lưu trong bộ nhớ của một tiến trình máy chủ; dùng một instance, không bật scale nhiều instance nếu chưa cấu hình kho trạng thái dùng chung. Restart ứng dụng sẽ đóng các phòng đang chơi.

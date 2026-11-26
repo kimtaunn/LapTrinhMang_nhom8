@@ -1,1 +1,17 @@
-﻿.vs/
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Publish output
+publish/
+
+# OS files
+Thumbs.db
+.DS_Store
