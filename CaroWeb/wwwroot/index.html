@@ -8,6 +8,52 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <main id="nickname-screen" class="nickname-screen" aria-labelledby="welcome-title">
+    <section class="nickname-card">
+      <div class="nickname-brand">
+        <span class="brand-mark"><span>X</span><span>O</span></span>
+        <span>Caro Club</span>
+      </div>
+      <p class="nickname-kicker">SẴN SÀNG CHƯA?</p>
+      <h1 id="welcome-title">Chào mừng đến Caro Club</h1>
+      <p class="nickname-intro">Nhập tên hiển thị, sau đó chọn cách bắt đầu ván Caro.</p>
+      <label for="nickname-input">Tên của bạn</label>
+      <input id="nickname-input" maxlength="20" autocomplete="nickname" placeholder="Ví dụ: Minh Anh">
+      <p id="nickname-error" class="nickname-error" role="alert" aria-live="polite" hidden></p>
+      <div class="nickname-actions">
+        <section class="nickname-option nickname-create-option" aria-labelledby="create-option-title">
+          <span class="nickname-option-number">01</span>
+          <h2 id="create-option-title">Tạo phòng mới</h2>
+          <p>Tạo phòng và gửi mã 6 ký tự cho bạn bè.</p>
+          <button id="nickname-create" class="primary-button nickname-primary" type="button" disabled>Tạo phòng</button>
+        </section>
+        <section class="nickname-option nickname-join-option" aria-labelledby="join-option-title">
+          <span class="nickname-option-number">02</span>
+          <h2 id="join-option-title">Tham gia phòng</h2>
+          <p>Nhập mã phòng bạn bè đã gửi cho bạn.</p>
+          <label class="sr-only" for="nickname-room-code">Mã phòng</label>
+          <input id="nickname-room-code" maxlength="6" placeholder="Ví dụ: ABC123" autocomplete="off" aria-describedby="nickname-room-help">
+          <small id="nickname-room-help" class="nickname-room-help">Mã phòng gồm 6 ký tự.</small>
+          <button id="nickname-join" class="secondary-button" type="button" disabled>Vào phòng</button>
+        </section>
+      </div>
+      <div class="nickname-footer">
+        <div class="nickname-bot-row">
+          <span>Muốn luyện tập trước?</span>
+          <label class="sr-only" for="nickname-bot-difficulty">Độ khó bot</label>
+          <select id="nickname-bot-difficulty" aria-label="Độ khó bot">
+            <option value="easy">Dễ</option>
+            <option value="medium" selected>Trung bình</option>
+            <option value="hard">Khó</option>
+          </select>
+          <button id="nickname-bot" class="secondary-button" type="button" disabled>Chơi với máy</button>
+        </div>
+        <p id="nickname-connection" class="nickname-connection" role="status" aria-live="polite">Đang kết nối máy chủ...</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="game-screen" class="game-screen" hidden>
   <header class="topbar">
     <a class="brand" href="/" aria-label="Caro Club - trang chủ">
       <span class="brand-mark"><span>X</span><span>O</span></span>
@@ -18,8 +64,8 @@
       <button id="history-tab" class="nav-link" type="button">Lịch sử</button>
     </nav>
     <div class="account">
-      <span class="account-avatar">B</span>
-      <span class="account-name">Bạn</span>
+      <span class="account-avatar" id="account-avatar">B</span>
+      <span class="account-name" id="account-name">Bạn</span>
       <span class="online-dot" aria-label="Trực tuyến"></span>
     </div>
   </header>
@@ -158,6 +204,7 @@
       <div id="history-list" class="history-list" aria-live="polite"></div>
     </section>
   </main>
+  </div>
 
   <dialog id="request-dialog" class="game-dialog" aria-labelledby="request-dialog-title">
     <div class="dialog-content">

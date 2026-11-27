@@ -28,6 +28,7 @@ public sealed class GameHub : Hub
 {
     private const int BoardSize = CaroRules.BoardSize;
     private const int ChatLimit = 250;
+    private const int NicknameLimit = 20;
     private const string RoomCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static readonly TimeSpan ReconnectTimeout = TimeSpan.FromSeconds(45);
     private static readonly ConcurrentDictionary<string, GameRoom> Rooms = new();
@@ -145,7 +146,9 @@ public sealed class GameHub : Hub
         string? GuestDisconnectGeneration,
         string? UndoRequester,
         string? UndoRequesterSide,
-        List<MoveRecord>? MoveHistory);
+        List<MoveRecord>? MoveHistory,
+        string? NicknameX = null,
+        string? NicknameO = null);
 
     private sealed record MoveRecord(
         int Row,
@@ -160,18 +163,47 @@ public sealed class GameHub : Hub
         int? PreviousLastRow,
         int? PreviousLastColumn);
 
+    public async Task SetNickname(string nickname)
+    {
+        var normalized = (nickname ?? "").Trim();
+        if (normalized.Length is < 1 or > NicknameLimit || normalized.Any(char.IsControl))
+        {
+            await Clients.Caller.SendAsync(
+                "ErrorMessage",
+                $"Tên hiển thị phải có từ 1 đến {NicknameLimit} ký tự và không chứa ký tự điều khiển.");
+            return;
+        }
+
+        Context.Items["nickname"] = normalized;
+        if (!TryGetRoom(out var code, out var room, out var side))
+            return;
+
+        var token = room.GetPlayerToken(side);
+        RoomSnapshot snapshot;
+        lock (room.Sync)
+        {
+            room.SetNickname(side, normalized);
+            snapshot = room.Snapshot(code);
+        }
+
+        if (token is not null)
+            PlayerBindings[token] = new PlayerBinding(code, side, normalized);
+        await Clients.Group(code).SendAsync("GameState", snapshot);
+    }
+
     public async Task CreateRoom()
     {
         var code = NewRoomCode();
         var token = NewPlayerToken();
         var room = new GameRoom(Context.ConnectionId, token);
+        room.NicknameX = GetConnectionNickname();
         if (!Rooms.TryAdd(code, room))
         {
             await Clients.Caller.SendAsync("ErrorMessage", "Không tạo được phòng, vui lòng thử lại.");
             return;
         }
 
-        PlayerBindings[token] = new PlayerBinding(code, "X");
+        PlayerBindings[token] = new PlayerBinding(code, "X", room.NicknameX);
         Context.Items["room"] = code;
         Context.Items["side"] = "X";
         await Groups.AddToGroupAsync(Context.ConnectionId, code);
@@ -190,13 +222,14 @@ public sealed class GameHub : Hub
         var code = NewRoomCode();
         var token = NewPlayerToken();
         var room = new GameRoom(Context.ConnectionId, token, isBotGame: true, botDifficulty: difficulty);
+        room.NicknameX = GetConnectionNickname();
         if (!Rooms.TryAdd(code, room))
         {
             await Clients.Caller.SendAsync("ErrorMessage", "Không tạo được ván chơi, vui lòng thử lại.");
             return;
         }
 
-        PlayerBindings[token] = new PlayerBinding(code, "X");
+        PlayerBindings[token] = new PlayerBinding(code, "X", room.NicknameX);
         Context.Items["room"] = code;
         Context.Items["side"] = "X";
         await Groups.AddToGroupAsync(Context.ConnectionId, code);
@@ -263,6 +296,7 @@ public sealed class GameHub : Hub
             {
                 room.GuestConnectionId = Context.ConnectionId;
                 room.GuestToken = token;
+                room.NicknameO = GetConnectionNickname();
                 room.TurnStartedAt = DateTimeOffset.UtcNow;
                 joinError = null;
             }
@@ -274,7 +308,7 @@ public sealed class GameHub : Hub
             return;
         }
 
-        PlayerBindings[token] = new PlayerBinding(code, "O");
+        PlayerBindings[token] = new PlayerBinding(code, "O", room.NicknameO);
         Context.Items["room"] = code;
         Context.Items["side"] = "O";
         await Groups.AddToGroupAsync(Context.ConnectionId, code);
@@ -310,6 +344,12 @@ public sealed class GameHub : Hub
                 previousConnectionId = room.GetConnectionId(binding.Side);
                 room.CancelDisconnectTimeout(binding.Side);
                 room.SetConnectionId(binding.Side, Context.ConnectionId);
+                if (Context.Items.TryGetValue("nickname", out var nicknameValue) &&
+                    nicknameValue is string nickname)
+                {
+                    room.SetNickname(binding.Side, nickname);
+                    PlayerBindings[playerToken] = binding with { Nickname = nickname };
+                }
                 snapshot = room.Snapshot(binding.RoomCode);
             }
         }
@@ -730,6 +770,11 @@ public sealed class GameHub : Hub
         return false;
     }
 
+    private string GetConnectionNickname() =>
+        Context.Items.TryGetValue("nickname", out var value) && value is string nickname
+            ? nickname
+            : "Người chơi";
+
     private Task SendState(string code, GameRoom room)
     {
         RoomSnapshot snapshot;
@@ -881,6 +926,8 @@ public sealed class GameHub : Hub
         public string? GuestToken { get; set; }
         public bool IsBotGame { get; } = isBotGame;
         public string BotDifficulty { get; set; } = botDifficulty;
+        public string NicknameX { get; set; } = "Người chơi X";
+        public string NicknameO { get; set; } = "Đối thủ";
         public bool HasOpponent => IsBotGame || GuestToken is not null;
         public bool ArePlayersConnected =>
             HostConnectionId is not null && (IsBotGame || GuestConnectionId is not null);
@@ -910,6 +957,14 @@ public sealed class GameHub : Hub
 
         public string? GetPlayerToken(string side) =>
             side == "X" ? HostToken : GuestToken;
+
+        public void SetNickname(string side, string nickname)
+        {
+            if (side == "X")
+                NicknameX = nickname;
+            else
+                NicknameO = nickname;
+        }
 
         public string? GetConnectionId(string side) =>
             side == "X" ? HostConnectionId : GuestConnectionId;
@@ -1054,7 +1109,8 @@ public sealed class GameHub : Hub
                 HasOpponent, ScoreX, ScoreO, TurnStartedAt,
                 TurnFinishedAt, LastRow, LastColumn, IsBotGame,
                 HostConnectionId is not null, IsBotGame || GuestConnectionId is not null,
-                CanUndo, RestartRequester is not null || UndoRequester is not null);
+                CanUndo, RestartRequester is not null || UndoRequester is not null,
+                NicknameX, NicknameO);
         }
 
         public PersistedGameRoom ToPersisted()
@@ -1074,7 +1130,8 @@ public sealed class GameHub : Hub
                 TurnStartedAt, TurnFinishedAt, LastRow, LastColumn, RestartRequester,
                 RestartRequesterSide, HostDisconnectedAt, GuestDisconnectedAt,
                 HostDisconnectGeneration, GuestDisconnectGeneration,
-                UndoRequester, UndoRequesterSide, MoveHistory.ToList());
+                UndoRequester, UndoRequesterSide, MoveHistory.ToList(),
+                NicknameX, NicknameO);
         }
 
         public static GameRoom Restore(PersistedGameRoom persisted)
@@ -1114,6 +1171,12 @@ public sealed class GameHub : Hub
             GuestDisconnectedAt = persisted.GuestDisconnectedAt;
             HostDisconnectGeneration = persisted.HostDisconnectGeneration;
             GuestDisconnectGeneration = persisted.GuestDisconnectGeneration;
+            NicknameX = string.IsNullOrWhiteSpace(persisted.NicknameX)
+                ? "Người chơi X"
+                : persisted.NicknameX;
+            NicknameO = string.IsNullOrWhiteSpace(persisted.NicknameO)
+                ? "Đối thủ"
+                : persisted.NicknameO;
         }
     }
 
@@ -1134,9 +1197,11 @@ public sealed class GameHub : Hub
         bool HostConnected,
         bool GuestConnected,
         bool CanUndo,
-        bool HasPendingRequest);
+        bool HasPendingRequest,
+        string NicknameX = "Người chơi X",
+        string NicknameO = "Đối thủ");
 
-    private sealed record PlayerBinding(string RoomCode, string Side);
+    private sealed record PlayerBinding(string RoomCode, string Side, string Nickname = "");
 }
 
 internal static class CaroRules

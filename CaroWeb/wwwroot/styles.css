@@ -202,6 +202,41 @@ h1 { margin: 0; color: var(--ink); font-family: "Playfair Display", Georgia, ser
 .game-over-trophy { display: block; font-size: 48px; }
 .game-over-dialog h2 { margin-top: 8px; font-size: 30px; }
 .game-over-dialog #game-over-message { color: #3d4a58; font-size: 19px; font-weight: 700; }
+
+.nickname-screen { min-height: 100vh; display: grid; place-items: center; padding: 32px 24px; transition: opacity 220ms ease, transform 220ms ease; }
+.nickname-screen.screen-leaving { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+.game-screen { min-height: 100vh; transition: opacity 220ms ease, transform 220ms ease; }
+.game-screen.screen-entering { opacity: 0; transform: translateY(10px); }
+.nickname-card { width: min(760px, 100%); padding: 38px 42px 28px; border: 1px solid #e3ddd2; border-radius: 20px; background: var(--paper); box-shadow: 0 18px 50px #43392214; }
+.nickname-brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 15px; font-weight: 700; }
+.nickname-kicker { margin: 25px 0 7px; color: #a17a3e; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-align: center; }
+.nickname-card > h1 { font-size: 32px; text-align: center; }
+.nickname-intro { margin: 9px 0 24px; color: #77786f; font-size: 14px; line-height: 1.55; text-align: center; }
+.nickname-card > label { display: block; margin-bottom: 7px; color: #4a535b; font-size: 12px; font-weight: 700; }
+.nickname-card input, .nickname-card select { min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; outline: none; color: var(--ink); background: #fffefa; font: inherit; font-size: 13px; }
+.nickname-card input:focus, .nickname-card select:focus { border-color: #c29a5a; box-shadow: 0 0 0 3px #bd8a3818; }
+#nickname-input { width: 100%; }
+.nickname-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.nickname-option { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; padding: 19px; border: 1px solid #e8e2d7; border-radius: 12px; background: #fffefa; }
+.nickname-create-option { border-color: #e7dcc6; background: linear-gradient(145deg, #fcf8ef, #fffefa 75%); }
+.nickname-option-number { color: #b18a4d; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.nickname-option h2 { margin: 7px 0 4px; color: var(--ink); font-size: 17px; }
+.nickname-option > p { min-height: 36px; margin: 0 0 14px; color: #85857e; font-size: 12px; line-height: 1.5; }
+.nickname-card .primary-button, .nickname-card .secondary-button { min-height: 44px; height: auto; font-size: 13px; }
+.nickname-primary, .nickname-join-option > input, .nickname-join-option > button { width: 100%; }
+.nickname-join-option > input { margin-top: auto; text-transform: uppercase; }
+.nickname-room-help { margin-top: 5px; color: #92918b; font-size: 10px; }
+.nickname-join-option > button { margin-top: 8px; }
+.nickname-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding-top: 15px; border-top: 1px solid #eee9e0; }
+.nickname-bot-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nickname-bot-row > span { margin-right: 3px; color: #85857e; font-size: 11px; }
+.nickname-bot-row select { width: 125px; height: 36px; }
+.nickname-bot-row .secondary-button { min-height: 36px; }
+.nickname-error { margin: 12px 0 0; color: #a74d45; font-size: 12px; line-height: 1.5; }
+.nickname-connection { margin: 0; color: #85857e; font-size: 11px; text-align: right; }
+.nickname-connection.online { color: #32835f; }
+.nickname-connection.offline { color: #b55c50; }
+
 @media (max-width: 430px) {
   .player-identity strong { font-size: 11px; }
   .player-identity span { font-size: 9px; }
@@ -213,4 +248,23 @@ h1 { margin: 0; color: var(--ink); font-family: "Playfair Display", Georgia, ser
   .dialog-content { padding: 24px 18px; }
   .dialog-content h2 { font-size: 23px; }
   .dialog-content p { font-size: 14px; }
+  .nickname-screen { padding: 16px; }
+  .nickname-card { padding: 25px 20px 20px; }
+  .nickname-kicker { margin-top: 22px; }
+  .nickname-card > h1 { font-size: 25px; }
+  .nickname-actions { grid-template-columns: 1fr; gap: 10px; }
+  .nickname-option { padding: 16px; }
+  .nickname-option > p { min-height: auto; }
+  .nickname-footer { align-items: flex-start; flex-direction: column; }
+  .nickname-bot-row { width: 100%; }
+  .nickname-bot-row > span { width: 100%; }
+  .nickname-bot-row select { flex: 1; width: auto; }
+  .nickname-connection { text-align: left; }
+}
+@media (min-width: 431px) and (max-width: 620px) {
+  .nickname-card { padding: 30px 26px 24px; }
+  .nickname-actions { gap: 10px; }
+  .nickname-option { padding: 15px; }
+  .nickname-footer { align-items: flex-start; flex-direction: column; }
+  .nickname-connection { text-align: left; }
 }

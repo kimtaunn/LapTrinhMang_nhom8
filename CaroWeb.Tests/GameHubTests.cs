@@ -20,6 +20,44 @@ public sealed class GameHubTests
     }
 
     [Fact]
+    public async Task NicknamesAreIncludedInRoomStateForBothPlayers()
+    {
+        var hostClient = new RecordingClientProxy();
+        var host = CreateHub("nickname-host", hostClient);
+        await host.SetNickname("Minh Anh");
+        await host.CreateRoom();
+        var roomCode = (string)hostClient.Single("RoomCreated").Arguments[0]!;
+
+        var guestClient = new RecordingClientProxy();
+        var guest = CreateHub("nickname-guest", guestClient);
+        await guest.SetNickname("Gia Huy");
+        await guest.JoinRoom(roomCode);
+
+        var state = (GameHub.RoomSnapshot)guestClient.Messages
+            .Last(message => message.Method == "GameState").Arguments[0]!;
+        Assert.Equal("Minh Anh", state.NicknameX);
+        Assert.Equal("Gia Huy", state.NicknameO);
+
+        await host.SetNickname("Minh");
+        var updatedState = (GameHub.RoomSnapshot)hostClient.Messages
+            .Last(message => message.Method == "GameState").Arguments[0]!;
+        Assert.Equal("Minh", updatedState.NicknameX);
+    }
+
+    [Fact]
+    public async Task NicknameLongerThanLimitIsRejected()
+    {
+        var caller = new RecordingClientProxy();
+        var hub = CreateHub("nickname-invalid", caller);
+
+        await hub.SetNickname(new string('a', 21));
+
+        Assert.Contains(caller.Messages, message =>
+            message.Method == "ErrorMessage" &&
+            ((string)message.Arguments[0]!).Contains("20"));
+    }
+
+    [Fact]
     public async Task PlayerCannotPlayTwiceWhenTurnHasPassed()
     {
         var hostClient = new RecordingClientProxy();
@@ -41,6 +79,7 @@ public sealed class GameHubTests
     {
         var hostClient = new RecordingClientProxy();
         var host = CreateHub("disconnect-host", hostClient);
+        await host.SetNickname("Tuan");
         await host.CreateRoom();
         var created = hostClient.Single("RoomCreated");
         var roomCode = (string)created.Arguments[0]!;
@@ -60,6 +99,7 @@ public sealed class GameHubTests
         var restoredState = reconnectClient.Single("GameState");
         var snapshot = (GameHub.RoomSnapshot)restoredState.Arguments[0]!;
         Assert.Equal('X', snapshot.Board[7][7]);
+        Assert.Equal("Tuan", snapshot.NicknameX);
     }
 
     [Fact]

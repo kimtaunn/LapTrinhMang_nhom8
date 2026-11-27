@@ -18,11 +18,22 @@ const chatForm = document.getElementById("chat-form");
 const messages = document.getElementById("messages");
 const emptyChat = document.getElementById("empty-chat");
 const soundToggle = document.getElementById("sound-toggle");
+const nicknameScreen = document.getElementById("nickname-screen");
+const gameScreen = document.getElementById("game-screen");
+const nicknameInput = document.getElementById("nickname-input");
+const nicknameError = document.getElementById("nickname-error");
+const nicknameConnection = document.getElementById("nickname-connection");
+const nicknameCreateButton = document.getElementById("nickname-create");
+const nicknameJoinButton = document.getElementById("nickname-join");
+const nicknameJoinCode = document.getElementById("nickname-room-code");
+const nicknameBotButton = document.getElementById("nickname-bot");
+const nicknameBotDifficulty = document.getElementById("nickname-bot-difficulty");
 const gamePage = document.getElementById("game");
 const historyPage = document.getElementById("history-page");
 const historyList = document.getElementById("history-list");
 const historyStorageKey = "caro-game-history";
 const playerTokenStorageKey = "caro-player-token";
+const nicknameStorageKey = "caro-player-nickname";
 const maxHistoryEntries = 5;
 let mySide = null;
 let isBotGame = false;
@@ -31,6 +42,7 @@ let activeRoomCode = null;
 let currentState = null;
 let pendingMove = null;
 let playerToken = null;
+let playerNickname = "";
 let reconnectTimer = null;
 let rejoinInProgress = false;
 let activeRequestPrompt = null;
@@ -44,6 +56,12 @@ try {
   playerToken = sessionStorage.getItem(playerTokenStorageKey);
 } catch {
   playerToken = null;
+}
+
+try {
+  playerNickname = sessionStorage.getItem(nicknameStorageKey) || "";
+} catch {
+  playerNickname = "";
 }
 
 const connection = new signalR.HubConnectionBuilder()
@@ -189,6 +207,13 @@ function showPage(page) {
 function setConnected(connected) {
   connectionElement.textContent = connected ? "Đã kết nối" : "Mất kết nối";
   connectionElement.className = `connection ${connected ? "online" : "offline"}`;
+  nicknameConnection.textContent = connected
+    ? "Đã kết nối — bạn có thể tạo phòng hoặc nhập mã để tham gia."
+    : "Chưa kết nối máy chủ — đang tự thử lại, vui lòng đợi một chút.";
+  nicknameConnection.className = `nickname-connection ${connected ? "online" : "offline"}`;
+  nicknameCreateButton.disabled = !connected;
+  nicknameJoinButton.disabled = !connected || nicknameJoinCode.value.length !== 6;
+  nicknameBotButton.disabled = !connected;
   document.getElementById("connection-note").textContent =
     connected ? "Kết nối ổn định" : "Đang thử kết nối lại";
   document.getElementById("create-room").disabled = !connected || mySide !== null;
@@ -196,6 +221,69 @@ function setConnected(connected) {
   createBotButton.disabled = !connected || mySide !== null;
   botDifficulty.disabled = !connected || (mySide !== null && !isBotGame);
   leaveRoomButton.disabled = !connected || mySide === null;
+}
+
+function showNicknameError(message) {
+  nicknameError.textContent = message;
+  nicknameError.hidden = !message;
+}
+
+function updateNicknameDisplay(nickname) {
+  playerNickname = nickname;
+  document.getElementById("account-name").textContent = nickname || "Bạn";
+  document.getElementById("account-avatar").textContent = Array.from(nickname || "B")[0].toUpperCase();
+}
+
+function getNicknameFromInput() {
+  const nickname = nicknameInput.value.trim();
+  if (!nickname)
+    throw new Error("Hãy nhập tên hiển thị trước khi tiếp tục.");
+  if (nickname.length > 20)
+    throw new Error("Tên hiển thị không được dài quá 20 ký tự.");
+  if (/[\u0000-\u001f\u007f]/.test(nickname))
+    throw new Error("Tên hiển thị không được chứa ký tự điều khiển.");
+  return nickname;
+}
+
+async function runRoomAction(button, method, ...args) {
+  showNicknameError("");
+  button.disabled = true;
+  try {
+    const nickname = getNicknameFromInput();
+    nicknameInput.value = nickname;
+    updateNicknameDisplay(nickname);
+    try {
+      sessionStorage.setItem(nicknameStorageKey, nickname);
+    } catch (error) {
+      showNicknameError(`Không lưu được tên cho lần tải lại tiếp theo: ${error.message}`);
+    }
+
+    if (connection.state !== signalR.HubConnectionState.Connected)
+      throw new Error("Đang kết nối máy chủ. Vui lòng thử lại sau giây lát.");
+
+    await connection.invoke("SetNickname", nickname);
+    await connection.invoke(method, ...args);
+  } catch (error) {
+    showNicknameError(error.message);
+    if (!gameScreen.hidden)
+      appendMessage(error.message, "system");
+  } finally {
+    setConnected(connection.state === signalR.HubConnectionState.Connected);
+  }
+}
+
+function showGameScreen() {
+  if (!gameScreen.hidden) return;
+  gameScreen.hidden = false;
+  gameScreen.classList.add("screen-entering");
+  requestAnimationFrame(() => {
+    nicknameScreen.classList.add("screen-leaving");
+    gameScreen.classList.remove("screen-entering");
+  });
+  window.setTimeout(() => {
+    nicknameScreen.hidden = true;
+    nicknameScreen.classList.remove("screen-leaving");
+  }, 240);
 }
 
 function updateTurnClock() {
@@ -273,6 +361,11 @@ function clearPlayerToken() {
   }
 }
 
+async function applySavedNickname() {
+  if (playerNickname && connection.state === signalR.HubConnectionState.Connected)
+    await connection.invoke("SetNickname", playerNickname);
+}
+
 async function rejoinStoredRoom() {
   if (!playerToken || rejoinInProgress ||
       connection.state !== signalR.HubConnectionState.Connected)
@@ -332,8 +425,13 @@ function renderBoard(state) {
     }
   }
 
-  document.getElementById("name-x").textContent = mySide === "X" ? "Bạn" : state.hasOpponent ? "Đối thủ" : "Người chơi X";
-  document.getElementById("name-o").textContent = mySide === "O" ? "Bạn" : isBotGame ? `Máy (${botDifficultyLabel})` : state.hasOpponent ? "Đối thủ" : "Đang chờ";
+  document.getElementById("name-x").textContent = mySide === "X"
+    ? playerNickname || "Bạn"
+    : state.nicknameX || (state.hasOpponent ? "Đối thủ" : "Người chơi X");
+  document.getElementById("name-o").textContent = mySide === "O"
+    ? playerNickname || "Bạn"
+    : isBotGame ? `Máy (${botDifficultyLabel})`
+      : state.nicknameO || (state.hasOpponent ? "Đối thủ" : "Đang chờ");
   document.getElementById("avatar-x").textContent = "X";
   document.getElementById("avatar-o").textContent = state.hasOpponent ? "O" : "…";
   document.getElementById("score-x").textContent = String(state.scoreX ?? 0);
@@ -482,13 +580,40 @@ function clearLocalRoom(status, details) {
   setConnected(connection.state === signalR.HubConnectionState.Connected);
 }
 
-document.getElementById("create-room").addEventListener("click", async () => {
-  try {
-    await connection.invoke("CreateRoom");
-  } catch (error) {
-    appendMessage(`Không tạo được phòng: ${error.message}`, "system");
+nicknameInput.value = playerNickname;
+updateNicknameDisplay(playerNickname);
+nicknameCreateButton.addEventListener("click", () =>
+  runRoomAction(nicknameCreateButton, "CreateRoom"));
+nicknameJoinButton.addEventListener("click", () => {
+  const code = nicknameJoinCode.value.trim();
+  if (code.length !== 6) {
+    showNicknameError("Mã phòng phải gồm 6 ký tự.");
+    return;
   }
+  runRoomAction(nicknameJoinButton, "JoinRoom", code);
 });
+nicknameBotButton.addEventListener("click", () => {
+  botDifficulty.value = nicknameBotDifficulty.value;
+  runRoomAction(nicknameBotButton, "StartBotGame", nicknameBotDifficulty.value);
+});
+nicknameInput.addEventListener("input", () => showNicknameError(""));
+nicknameInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter")
+    nicknameCreateButton.click();
+});
+nicknameJoinCode.addEventListener("input", () => {
+  nicknameJoinCode.value = nicknameJoinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  nicknameJoinButton.disabled =
+    connection.state !== signalR.HubConnectionState.Connected || nicknameJoinCode.value.length !== 6;
+  showNicknameError("");
+});
+nicknameJoinCode.addEventListener("keydown", (event) => {
+  if (event.key === "Enter")
+    nicknameJoinButton.click();
+});
+
+document.getElementById("create-room").addEventListener("click", () =>
+  runRoomAction(document.getElementById("create-room"), "CreateRoom"));
 
 document.getElementById("game-tab").addEventListener("click", () => showPage("game"));
 document.getElementById("history-tab").addEventListener("click", () => showPage("history"));
@@ -499,21 +624,11 @@ document.getElementById("clear-history").addEventListener("click", () => {
   renderGameHistory();
 });
 
-createBotButton.addEventListener("click", async () => {
-  try {
-    await connection.invoke("StartBotGame", botDifficulty.value);
-  } catch (error) {
-    appendMessage(`Không bắt đầu được ván với máy: ${error.message}`, "system");
-  }
-});
+createBotButton.addEventListener("click", () =>
+  runRoomAction(createBotButton, "StartBotGame", botDifficulty.value));
 
-document.getElementById("join-room").addEventListener("click", async () => {
-  try {
-    await connection.invoke("JoinRoom", roomCodeInput.value);
-  } catch (error) {
-    appendMessage(`Không vào được phòng: ${error.message}`, "system");
-  }
-});
+document.getElementById("join-room").addEventListener("click", () =>
+  runRoomAction(document.getElementById("join-room"), "JoinRoom", roomCodeInput.value));
 
 roomCodeInput.addEventListener("input", () => {
   roomCodeInput.value = roomCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -624,6 +739,7 @@ soundToggle.addEventListener("change", () => {
 });
 
 connection.on("RoomCreated", (code, side, token) => {
+  showGameScreen();
   mySide = side;
   isBotGame = false;
   botDifficultyLabel = "";
@@ -637,6 +753,7 @@ connection.on("RoomCreated", (code, side, token) => {
 });
 
 connection.on("JoinedRoom", (code, side, token) => {
+  showGameScreen();
   mySide = side;
   isBotGame = false;
   botDifficultyLabel = "";
@@ -650,12 +767,14 @@ connection.on("JoinedRoom", (code, side, token) => {
 });
 
 connection.on("BotGameStarted", (code, side, difficulty, token) => {
+  showGameScreen();
   mySide = side;
   isBotGame = true;
   botDifficultyLabel = { easy: "dễ", medium: "trung bình", hard: "khó" }[difficulty] ?? difficulty;
   activeRoomCode = code;
   storePlayerToken(token);
   botDifficulty.value = difficulty;
+  nicknameBotDifficulty.value = difficulty;
   roomCodeInput.value = "";
   roomCodeDisplay.textContent = "VS MÁY";
   copyButton.disabled = true;
@@ -689,6 +808,7 @@ connection.on("GameState", (state) => {
     playMoveSound();
 });
 connection.on("RoomRejoined", (code, side, botGame, difficulty, token) => {
+  showGameScreen();
   mySide = side;
   isBotGame = botGame;
   botDifficultyLabel = botGame
@@ -700,6 +820,7 @@ connection.on("RoomRejoined", (code, side, botGame, difficulty, token) => {
   roomCodeDisplay.textContent = botGame ? "VS MÁY" : code;
   copyButton.disabled = botGame;
   if (botGame) botDifficulty.value = difficulty;
+  if (botGame) nicknameBotDifficulty.value = difficulty;
   setConnected(true);
   appendMessage(`Đã kết nối lại phòng ${botGame ? "đấu với máy" : code}.`, "system");
 });
@@ -708,6 +829,7 @@ connection.on("RejoinFailed", (text) => {
   pendingMove = null;
   roomCodeInput.value = "";
   clearLocalRoom("Không thể khôi phục phòng", text);
+  showNicknameError(text);
   appendMessage(text, "system");
 });
 connection.on("SessionReplaced", () => {
@@ -723,6 +845,8 @@ connection.on("MoveRejected", (row, column, text) => {
 connection.on("ErrorMessage", (text) => {
   pendingRequest = null;
   if (currentState) renderBoard(currentState);
+  if (gameScreen.hidden)
+    showNicknameError(text);
   appendMessage(text, "system");
 });
 connection.on("SystemMessage", (text) => appendMessage(text, "system"));
@@ -782,6 +906,7 @@ connection.onreconnecting(() => {
 });
 connection.onreconnected(async () => {
   setConnected(true);
+  await applySavedNickname();
   await rejoinStoredRoom();
 });
 connection.onclose(() => {
@@ -797,6 +922,7 @@ async function start() {
   try {
     await connection.start();
     setConnected(true);
+    await applySavedNickname();
     await rejoinStoredRoom();
   } catch (error) {
     setConnected(false);
